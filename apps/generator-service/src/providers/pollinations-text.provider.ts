@@ -16,12 +16,21 @@ export class PollinationsTextProvider implements AiProvider {
   }
 
   async generate(prompt: string): Promise<GenerationResult> {
-    const url = `${this.baseUrl}/${encodeURIComponent(prompt)}`;
-    this.logger.log(`Calling Pollinations text API`);
+    // Use OpenAI-compatible POST endpoint — handles long/multiline prompts
+    const url = `${this.baseUrl}/openai`;
+    this.logger.log('Calling Pollinations text API (POST /openai)');
 
     const response = await fetch(url, {
-      method: 'GET',
-      headers: { Accept: 'text/plain' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'openai',
+        messages: [
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 1024,
+      }),
     });
 
     if (!response.ok) {
@@ -30,7 +39,11 @@ export class PollinationsTextProvider implements AiProvider {
       );
     }
 
-    const text = await response.text();
+    const data = (await response.json()) as Record<string, unknown>;
+
+    // OpenAI-compatible response format
+    const choices = data?.choices as Array<{ message?: { content?: string } }> | undefined;
+    const text = choices?.[0]?.message?.content;
 
     if (!text || text.trim().length === 0) {
       throw new Error('Pollinations returned empty response');

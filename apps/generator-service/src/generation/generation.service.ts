@@ -20,7 +20,8 @@ import { StatusPublisherService } from '../status/status-publisher.service';
 @Injectable()
 export class GenerationService {
   private readonly logger = new Logger(GenerationService.name);
-  private readonly timeoutMs: number;
+  private readonly textTimeoutMs: number;
+  private readonly imageTimeoutMs: number;
 
   constructor(
     private readonly config: ConfigService,
@@ -32,8 +33,13 @@ export class GenerationService {
     private readonly mockText: MockTextProvider,
     private readonly statusPublisher: StatusPublisherService,
   ) {
-    this.timeoutMs = parseInt(
+    this.textTimeoutMs = parseInt(
       this.config.get('GENERATION_TIMEOUT_MS', String(GENERATION_TIMEOUT_MS)),
+      10,
+    );
+    // Image generation takes longer — Pollinations renders the image server-side
+    this.imageTimeoutMs = parseInt(
+      this.config.get('IMAGE_GENERATION_TIMEOUT_MS', '30000'),
       10,
     );
   }
@@ -60,11 +66,14 @@ export class GenerationService {
       // Step 1: Enhance prompt
       const enhancedPrompt = this.enhancement.enhance(prompt, type);
 
-      // Step 2: Select provider and generate with timeout
+      // Step 2: Select provider and generate with type-specific timeout
       const provider = this.selectProvider(type);
+      const timeout =
+        type === JobType.IMAGE ? this.imageTimeoutMs : this.textTimeoutMs;
+
       const result = await this.withTimeout(
         provider.generate(enhancedPrompt),
-        this.timeoutMs,
+        timeout,
       );
 
       // Step 3: Emit completion

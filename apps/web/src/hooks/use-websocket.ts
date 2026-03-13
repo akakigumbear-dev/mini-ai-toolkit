@@ -10,7 +10,6 @@ type EventHandler = (data: unknown) => void;
 export function useWebSocket() {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
-  const handlersRef = useRef<Map<string, Set<EventHandler>>>(new Map());
 
   useEffect(() => {
     const socket = io(`${WS_URL}/ws`, {
@@ -21,43 +20,26 @@ export function useWebSocket() {
       reconnectionAttempts: Infinity,
     });
 
-    socket.on('connect', () => {
-      setConnected(true);
-    });
-
-    socket.on('disconnect', () => {
-      setConnected(false);
-    });
+    socket.on('connect', () => setConnected(true));
+    socket.on('disconnect', () => setConnected(false));
 
     socketRef.current = socket;
 
     return () => {
       socket.disconnect();
+      socketRef.current = null;
     };
   }, []);
 
   const subscribe = useCallback((event: string, handler: EventHandler) => {
-    if (!handlersRef.current.has(event)) {
-      handlersRef.current.set(event, new Set());
-    }
-    handlersRef.current.get(event)!.add(handler);
-
     const socket = socketRef.current;
-    if (socket) {
-      // Only add socket listener once per event
-      if (handlersRef.current.get(event)!.size === 1) {
-        socket.on(event, (data: unknown) => {
-          handlersRef.current.get(event)?.forEach((h) => h(data));
-        });
-      }
-    }
+    if (!socket) return () => {};
+
+    // Directly attach/detach this specific handler to the socket
+    socket.on(event, handler);
 
     return () => {
-      handlersRef.current.get(event)?.delete(handler);
-      if (handlersRef.current.get(event)?.size === 0) {
-        socket?.off(event);
-        handlersRef.current.delete(event);
-      }
+      socket.off(event, handler);
     };
   }, []);
 

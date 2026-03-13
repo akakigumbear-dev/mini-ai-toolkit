@@ -16,11 +16,12 @@ export class PollinationsImageProvider implements AiProvider {
   }
 
   async generate(prompt: string): Promise<GenerationResult> {
-    const imageUrl = `${this.baseUrl}/${encodeURIComponent(prompt)}?width=512&height=512&nologo=true`;
-    this.logger.log(`Calling Pollinations image API`);
+    const imageUrl = `${this.baseUrl}/${encodeURIComponent(prompt)}?width=512&height=512&nologo=true&seed=${Date.now()}`;
+    this.logger.log('Fetching image from Pollinations (warms cache)');
 
-    // Verify the URL is reachable (HEAD request)
-    const response = await fetch(imageUrl, { method: 'HEAD' });
+    // Fetch the image to trigger generation and warm Pollinations' cache.
+    // When the browser later loads the same URL, the image is ready instantly.
+    const response = await fetch(imageUrl);
 
     if (!response.ok) {
       throw new Error(
@@ -28,6 +29,10 @@ export class PollinationsImageProvider implements AiProvider {
       );
     }
 
+    // Consume body to complete the request
+    await response.arrayBuffer();
+
+    this.logger.log('Image generated and cached at Pollinations');
     return { imageUrl, provider: this.name };
   }
 }

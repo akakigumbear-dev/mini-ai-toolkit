@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { WsAwareThrottlerGuard } from './throttle/ws-throttler.guard';
 import { GenerationJobEntity } from './generations/entities/generation-job.entity';
 import { GenerationsModule } from './generations/generations.module';
 import { QueueModule } from './queue/queue.module';
@@ -50,7 +51,7 @@ import { HealthModule } from './health/health.module';
   providers: [
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: WsAwareThrottlerGuard,
     },
   ],
 })

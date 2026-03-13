@@ -1,4 +1,4 @@
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 WORKDIR /app
 
 # Copy workspace root
@@ -19,7 +19,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build --workspace=apps/web
 
 # Production
-FROM node:18-alpine
+FROM node:20-alpine
 WORKDIR /app
 
 COPY --from=base /app/apps/web/.next/standalone ./
