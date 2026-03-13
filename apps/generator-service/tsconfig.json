@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strictPropertyInitialization": false,
+    "paths": {
+      "@mini-ai-toolkit/shared-types": ["../../packages/shared-types/src"]
+    }
+  },
+  "include": ["src/**/*"]
+}
